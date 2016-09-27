@@ -3,8 +3,18 @@ module.exports = {
   api: {
     url: '/api/v0/messaging/health',
     settings: {
-      headers: {
-        'X-Key-Inflection': 'camel'
+      get: {
+        method: 'GET',
+        headers: {
+          'X-Key-Inflection': 'camel'
+        }
+      },
+      post: {
+        method: 'POST',
+        headers: {
+          'X-Key-Inflection': 'camel',
+          'Content-Type': 'application/json'
+        }
       }
     }
   },
@@ -39,20 +49,22 @@ module.exports = {
       value: 'OTHER'
     }
   ],
-
-  composeMessagePlaceholders: {
-    subject: 'Add an additional subject line',
-    message: 'Type your message here'
+  composeMessage: {
+    placeholders: {
+      subject: 'Add an additional subject line (optional)',
+      message: 'Type your message here'
+    },
+    errors: {
+      category: 'Please select a category.',
+      message: 'Please enter your message.',
+      subject: 'Please add subject description.',
+      recipient: 'Please select a recipient from your health care team.'
+    },
+    maxChars: {
+      message: 2000,
+      subject: 512
+    }
   },
-
-  composeMessageErrors: {
-    category: 'Please select a category.',
-    message: 'Please enter your message.',
-    subject: 'Please add subject description.',
-    recipient: 'Please select a recipient from your health care team.'
-  },
-
-  composeMessageMaxChars: 2000,
   allowedMimeTypes: [
     'text/plain',
     'application/pdf',
@@ -66,11 +78,11 @@ module.exports = {
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     'image/png'
   ],
-  createNewFolder: {
+  createNewFolderSettings: {
     maxLength: 50,
     errorMessages: {
       empty: 'Please enter a folder name.',
-      exists: 'You already have a folder with that name. Try again?',
+      exists: 'The folder name you have chosen already exists. Please try another name.',
       patternMismatch: 'Only the letters A through Z, numbers, and spaces are allowed in folder names.'
     }
   }
