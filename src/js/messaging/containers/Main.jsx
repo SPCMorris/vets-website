@@ -3,13 +3,19 @@ import { connect } from 'react-redux';
 import classNames from 'classnames';
 
 import {
+  createNewFolder,
+  setCurrentFolder,
   toggleFolderNav,
-  toggleManagedFolders,
-  setCurrentFolder
+  toggleManagedFolders
 } from '../actions/folders';
 
+import {
+  setNewFolderName,
+  toggleCreateFolderModal
+} from '../actions/modals';
+
+import { makeField } from '../../common/model/fields';
 import ButtonClose from '../components/buttons/ButtonClose';
-import { toggleCreateFolderModal } from '../actions/modals';
 import ComposeButton from '../components/ComposeButton';
 import FolderNav from '../components/FolderNav';
 import ModalCreateFolder from '../components/ModalCreateFolder';
@@ -17,12 +23,39 @@ import ModalCreateFolder from '../components/ModalCreateFolder';
 class Main extends React.Component {
   constructor(props) {
     super(props);
-    this.handleOnFolderChange = this.handleOnFolderChange.bind(this);
+    this.handleFolderChange = this.handleFolderChange.bind(this);
+    this.handleFolderNameChange = this.handleFolderNameChange.bind(this);
+    this.handleCreateNewFolderModal = this.handleCreateNewFolderModal.bind(this);
+    this.handleSubmitCreateNewFolder = this.handleSubmitCreateNewFolder.bind(this);
   }
 
-  handleOnFolderChange(domEvent) {
+  handleFolderChange(domEvent) {
     const folderId = domEvent.target.dataset.folderid;
     this.props.setCurrentFolder(folderId);
+  }
+
+  handleFolderNameChange(field) {
+    this.props.setNewFolderName(field);
+  }
+
+  handleCreateNewFolderModal() {
+    // Reset the form / state object when closed
+    const resetForm = makeField('');
+    this.props.setNewFolderName(resetForm);
+    this.props.toggleCreateFolderModal();
+  }
+
+  handleSubmitCreateNewFolder(domEvent) {
+    domEvent.preventDefault();
+    const input = domEvent.target.getElementsByTagName('input')[0];
+    // If, by chance, the veteran has submitted this form without touching the
+    // folder name field, trigger an action that will trigger an error.
+    if (input.value === '') {
+      this.props.setNewFolderName({ value: '', dirty: true });
+    } else {
+      this.props.createNewFolder(input.value);
+    }
+    this.handleCreateNewFolderModal();
   }
 
   render() {
@@ -52,8 +85,11 @@ class Main extends React.Component {
             cssClass="messaging-modal"
             folders={this.props.folders}
             id="messaging-create-folder"
-            onClose={this.props.toggleCreateFolderModal}
-            visible={this.props.isCreateFolderModalOpen}/>
+            onClose={this.handleCreateNewFolderModal}
+            onValueChange={this.handleFolderNameChange}
+            onSubmit={this.handleSubmitCreateNewFolder}
+            visible={this.props.isCreateFolderModalOpen}
+            newFolderName={this.props.newFolderName}/>
       </div>
     );
   }
@@ -65,19 +101,23 @@ Main.propTypes = {
 
 const mapStateToProps = (state) => {
   return {
-    persistFolder: state.folders.data.currentItem.persistFolder,
     folders: state.folders.data.items,
+    foldersExpanded: state.folders.ui.nav.foldersExpanded,
     hasFoldersExpanded: state.folders.ui.nav.foldersExpanded,
     isCreateFolderModalOpen: state.modals.createFolder.visible,
-    isNavVisible: state.folders.ui.nav.visible
+    isNavVisible: state.folders.ui.nav.visible,
+    newFolderName: state.modals.createFolder.newFolderName,
+    persistFolder: state.folders.data.currentItem.persistFolder,
   };
 };
 
 const mapDispatchToProps = {
+  createNewFolder,
   toggleCreateFolderModal,
   toggleFolderNav,
   toggleManagedFolders,
-  setCurrentFolder
+  setCurrentFolder,
+  setNewFolderName
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(Main);

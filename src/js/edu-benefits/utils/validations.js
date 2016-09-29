@@ -1,4 +1,5 @@
 import _ from 'lodash';
+import moment from 'moment';
 import { states } from './options-for-select';
 import { dateToMoment, showRelinquishedEffectiveDate } from './helpers';
 
@@ -38,6 +39,13 @@ function isBlank(value) {
 
 function isNotBlank(value) {
   return value !== '';
+}
+
+function isBlankAddress(address) {
+  return isBlank(address.city.value)
+    && isBlank(address.state.value)
+    && isBlank(address.street.value)
+    && isBlank(address.postalCode.value);
 }
 
 function isValidYear(value) {
@@ -153,6 +161,21 @@ function isValidDateField(field) {
   return isValidDate(field.day.value, field.month.value, field.year.value);
 }
 
+function isValidFutureDate(day, month, year) {
+  const today = moment().startOf('day');
+  const date = moment({
+    day,
+    month: parseInt(month, 10) - 1,
+    year
+  });
+
+  return date.isValid() && date.isSameOrAfter(today);
+}
+
+function isValidFutureDateField(field) {
+  return isValidFutureDate(field.day.value, field.month.value, field.year.value);
+}
+
 function isValidFutureOrPastDateField(field) {
   if (!isBlankDateField(field)) {
     const momentDate = dateToMoment(field);
@@ -189,7 +212,7 @@ function isValidAddressField(field) {
   if (_.hasIn(states, field.country.value)) {
     return initialOk &&
       isNotBlank(field.state.value) &&
-      isNotBlank(field.zipcode.value);
+      isNotBlank(field.postalCode.value);
   }
   // if the entry was non-USA/CAN/MEX, only postal is
   // required, not provinceCode
@@ -245,7 +268,8 @@ function isValidEducationHistoryPage(data) {
 }
 
 function isValidSecondaryContactPage(data) {
-  return isValidField(isValidPhone, data.secondaryContact.phone);
+  return isValidField(isValidPhone, data.secondaryContact.phone)
+    && (isBlankAddress(data.secondaryContact.address) || isValidAddressField(data.secondaryContact.address));
 }
 
 function isValidContactInformationPage(data) {
@@ -377,5 +401,7 @@ export {
   isValidContactInformationPage,
   isValidMilitaryServicePage,
   isValidPage,
-  isValidValue
+  isValidValue,
+  isValidFutureDateField,
+  isBlankAddress
 };

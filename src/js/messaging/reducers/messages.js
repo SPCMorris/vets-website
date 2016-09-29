@@ -5,9 +5,6 @@ import { makeField } from '../../common/model/fields';
 import {
   DELETE_REPLY,
   FETCH_THREAD_SUCCESS,
-  FETCH_THREAD_FAILURE,
-  SEND_MESSAGE_SUCCESS,
-  SEND_MESSAGE_FAILURE,
   TOGGLE_MESSAGE_COLLAPSED,
   TOGGLE_MESSAGES_COLLAPSED,
   TOGGLE_MOVE_TO,
@@ -15,14 +12,15 @@ import {
   UPDATE_REPLY_CHARACTER_COUNT
 } from '../actions/messages';
 
-import { composeMessageMaxChars } from '../config';
+import { composeMessage } from '../config';
 
 const initialState = {
   data: {
+    message: null,
     thread: [],
     reply: {
       body: makeField(''),
-      charsRemaining: composeMessageMaxChars
+      charsRemaining: composeMessage.maxChars.message
     }
   },
   ui: {
@@ -34,7 +32,7 @@ const initialState = {
 const resetReply = (state) => {
   const newReply = {
     body: makeField(''),
-    charsRemaining: composeMessageMaxChars
+    charsRemaining: composeMessage.maxChars.message
   };
 
   return set('data.reply', newReply, state);
@@ -42,13 +40,12 @@ const resetReply = (state) => {
 
 export default function folders(state = initialState, action) {
   switch (action.type) {
-    case DELETE_REPLY: {
+    case DELETE_REPLY:
       return resetReply(state);
-    }
 
     case FETCH_THREAD_SUCCESS: {
       const currentMessage = action.message.attributes;
-      const thread = action.thread.map(message => message.attributes);
+      const thread = action.thread.map(message => message.attributes).reverse();
       const messagesCollapsed = new Set(thread.map((message) => {
         return message.messageId;
       }));
@@ -60,27 +57,23 @@ export default function folders(state = initialState, action) {
 
       let newState = set('ui', newUi, state);
       newState = resetReply(newState);
+      newState = set('data.thread', thread, newState);
 
-      thread.reverse();
-      thread.push(currentMessage);
-      return set('data.thread', thread, newState);
-    }
+      if (!currentMessage.sentDate) {
+        const body = makeField(currentMessage.body);
+        const charsRemaining =
+          composeMessage.maxChars.message - currentMessage.body.length;
 
-    case SEND_MESSAGE_SUCCESS:
-      // console.log("SEND SUCCESS!");
-      // console.log(action.data);
-      return state;
-
-    case TOGGLE_MESSAGE_COLLAPSED: {
-      // Don't allow the currently viewed message (last in thread)
-      // to be collapsed.
-      const thread = state.data.thread;
-      const currentMessageId = thread[thread.length - 1].messageId;
-      if (action.messageId === currentMessageId) {
-        return state;
+        const reply = { body, charsRemaining };
+        newState = set('data.reply', reply, newState);
       }
 
+      return set('data.message', currentMessage, newState);
+    }
+
+    case TOGGLE_MESSAGE_COLLAPSED: {
       const newMessagesCollapsed = new Set(state.ui.messagesCollapsed);
+
       if (newMessagesCollapsed.has(action.messageId)) {
         newMessagesCollapsed.delete(action.messageId);
       } else {
@@ -98,12 +91,9 @@ export default function folders(state = initialState, action) {
       let newMessagesCollapsed = new Set();
 
       if (currentCollapsed.size === 0) {
-        // The current message should never be collapsed.
-        const messagesExceptCurrent = state.data.thread.slice(0, -1);
-        newMessagesCollapsed =
-          new Set(messagesExceptCurrent.map((message) => {
-            return message.messageId;
-          }));
+        newMessagesCollapsed = new Set(state.data.thread.map((message) => {
+          return message.messageId;
+        }));
       }
 
       return set('ui.messagesCollapsed', newMessagesCollapsed, state);
@@ -118,8 +108,6 @@ export default function folders(state = initialState, action) {
     case UPDATE_REPLY_CHARACTER_COUNT:
       return set('data.reply.charsRemaining', action.chars, state);
 
-    case FETCH_THREAD_FAILURE:
-    case SEND_MESSAGE_FAILURE:
     default:
       return state;
   }

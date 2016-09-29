@@ -1,6 +1,6 @@
 import React from 'react';
 
-import Address from '../../../common/components/questions/Address';
+import Address from '../Address';
 import Email from '../../../common/components/questions/Email';
 import Phone from '../../../common/components/questions/Phone';
 import ErrorableRadioButtons from '../../../common/components/form-elements/ErrorableRadioButtons';
@@ -15,7 +15,8 @@ export default class ContactInformationFields extends React.Component {
   }
 
   confirmEmail() {
-    if (this.props.data.email.value.toLowerCase() !== this.props.data.emailConfirmation.value.toLowerCase()) {
+    if (this.props.data.emailConfirmation.dirty
+      && this.props.data.email.value.toLowerCase() !== this.props.data.emailConfirmation.value.toLowerCase()) {
       return 'Please ensure your entries match';
     }
 
